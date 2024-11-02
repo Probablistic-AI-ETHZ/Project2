@@ -113,7 +113,8 @@ class SWAGInference(object):
         model_dir: pathlib.Path,
         # TODO(1): change inference_mode to InferenceMode.SWAG_DIAGONAL
         # TODO(2): change inference_mode to InferenceMode.SWAG_FULL
-        inference_mode: InferenceType = InferenceType.MAP,
+        inference_mode: InferenceType = InferenceType.SWAG_DIAGONAL,
+        inference_mode: InferenceType = InferenceType.SWAG_FULL,
         # TODO(2): optionally add/tweak hyperparameters
         swag_training_epochs: int = 30,
         swag_lr: float = 0.045,
@@ -153,10 +154,16 @@ class SWAGInference(object):
         #  as a dictionary that maps from weight name to values.
         #  Hint: you never need to consider the full vector of weights,
         #  but can always act on per-layer weights (in the format that _create_weight_copy() returns)
+        self._swag_mean_weights = self._create_weight_copy()
+        self._swag_std_weights = self._create_weight_copy()
+        self._swag_num_samples = 0
 
         # Full SWAG
         # TODO(2): create attributes for SWAG-full
         #  Hint: check collections.deque
+        self._swag_full_mean_weights = collections.deque(maxlen=self.max_rank_deviation_matrix)
+        self._swag_full_std_weights = collections.deque(maxlen=self.max_rank_deviation_matrix)
+        self._swag_full_num_samples = 0
 
         # Calibration, prediction, and other attributes
         # TODO(2): create additional attributes, e.g., for calibration
@@ -173,6 +180,19 @@ class SWAGInference(object):
         # SWAG-diagonal
         for name, param in copied_params.items():
             # TODO(1): update SWAG-diagonal attributes for weight `name` using `copied_params` and `param`
+            # I HAVE NO IDEA IF THIS MAKES SENSE
+            copied_params[name] = param
+            param = param.view(-1)
+            if name not in self._swag_mean_weights:
+                self._swag_mean_weights[name] = torch.zeros_like(param)
+                self._swag_std_weights[name] = torch.zeros_like(param)
+                self._swag_mean_weights[name] += param
+                self._swag_std_weights[name] += param ** 2
+            else:
+                self._swag_mean_weights[name] += param
+                self._swag_std_weights[name] += param ** 2
+                self._swag_num_samples += 1
+
             raise NotImplementedError("Update SWAG-diagonal statistics")
 
         # Full SWAG
