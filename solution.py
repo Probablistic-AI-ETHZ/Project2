@@ -14,7 +14,12 @@ import torch.utils.data
 import tqdm
 from matplotlib import pyplot as plt
 
-# from util import draw_reliability_diagram, cost_function, setup_seeds, calc_calibration_curve
+from util import (
+    draw_reliability_diagram,
+    cost_function,
+    setup_seeds,
+    calc_calibration_curve,
+)
 
 EXTENDED_EVALUATION = False
 """
