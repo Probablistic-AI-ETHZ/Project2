@@ -1,4 +1,3 @@
-# solution.py
 import abc
 import collections
 import enum
